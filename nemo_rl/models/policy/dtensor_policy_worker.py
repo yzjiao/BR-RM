@@ -705,6 +705,7 @@ class DTensorPolicyWorker:
                             logits = self.model.lm_head(outputs.last_hidden_state)
                         else:
                             logits = outputs.logits
+                        del outputs
 
                         # Apply temperature scaling
                         logits = self._apply_temperature_scaling(logits)
@@ -771,6 +772,7 @@ class DTensorPolicyWorker:
                             global_valid_seqs,
                             global_valid_toks,
                         )
+                        del logits
 
                         # skip the update for dummy batches
                         if mb_idx < iterator_len:
@@ -1029,8 +1031,9 @@ class DTensorPolicyWorker:
                                 placements=[Shard(sequence_dim), Shard(-1)],
                             )
 
+                        logits = logits.to(torch.float32)
                         token_logprobs = get_logprobs_from_vocab_parallel_logits(
-                            logits.to(torch.float32),
+                            logits,
                             input_ids_dtensor,
                             seq_index_tensor,
                         )
@@ -1038,8 +1041,9 @@ class DTensorPolicyWorker:
                         assert token_logprobs.shape[1] == seq_len - 1
                     else:
                         if isinstance(logits, DTensor):
+                            logits = logits.to(torch.float32)
                             token_logprobs = get_logprobs_from_vocab_parallel_logits(
-                                logits.to(torch.float32), input_ids
+                                logits, input_ids
                             )
                         else:
                             # Extract logprobs for each token in the sequence by gathering the logprob
@@ -1049,15 +1053,15 @@ class DTensorPolicyWorker:
                             #   token_ids: [batch_size, sequence_length] - actual tokens
                             # Output shape: [batch_size, sequence_length] - logprob of each token given previous
                             # We get logprob of token[t+1] from logits[t], prepending 0 to maintain sequence length
-
-                            log_probs = torch.nn.functional.log_softmax(
-                                outputs.logits.to(torch.float32), dim=-1
-                            )
+                            logits = outputs.logits.to(torch.float32)
+                            log_probs = torch.nn.functional.log_softmax(logits, dim=-1)
                             next_tokens = input_ids[:, 1:]
                             log_probs = log_probs[:, :-1]
                             token_logprobs = log_probs.gather(
                                 dim=-1, index=next_tokens.unsqueeze(-1)
                             ).squeeze(-1)
+
+                del outputs, logits
 
                 token_logprobs = torch.cat(
                     [torch.zeros_like(token_logprobs[:, :1]), token_logprobs], dim=1
