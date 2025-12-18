@@ -19,6 +19,14 @@ This approach achieves state-of-the-art performance on three challenging reward 
 - ✅ Built on NeMo-RL for scalability (1B to 100B+ parameters)
 - ✅ Compatible with standard RLHF pipelines
 
+
+### Model Checkpoints on Hugging Face
+
+BR-RM models are available on Hugging Face:
+- [`nvidia/Qwen3-Nemotron-14B-BRRM`](https://huggingface.co/nvidia/Qwen3-Nemotron-14B-BRRM)
+- [`nvidia/Qwen3-Nemotron-8B-BRRM`](https://huggingface.co/nvidia/Qwen3-Nemotron-8B-BRRM)
+
+
 ## How to Run
 
 ### Prerequisites
@@ -127,7 +135,7 @@ The training uses:
 
 #### Existing Model Checkpoints on Hugging Face
 
-Pre-trained BR-RM models will be available on Hugging Face (coming soon):
+BR-RM models are available on Hugging Face:
 - [`nvidia/Qwen3-Nemotron-14B-BRRM`](https://huggingface.co/nvidia/Qwen3-Nemotron-14B-BRRM)
 - [`nvidia/Qwen3-Nemotron-8B-BRRM`](https://huggingface.co/nvidia/Qwen3-Nemotron-8B-BRRM)
 
