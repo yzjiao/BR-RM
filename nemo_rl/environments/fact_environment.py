@@ -72,11 +72,11 @@ Respond in JSON format:
 
 ERROR_DETECTION_PROMPT = """Based on the search results as below, you should determine if factual claims are correct or incorrect.
 
-**Claims and Search Results:**
+**Search Results:**
 {search_results}
 
 Instructions:
-1. For each claim, verify the KEY ELEMENT (the specific date, number, name, place, etc.)
+1. For each claim you extracted previously, verify the KEY ELEMENT (the specific date, number, name, place, etc.)
 2. Compare the key elements in the claim with information from search results
 3. Mark as error ONLY if any key element is definitively wrong according to search results
 4. If search results don't provide clear information, mark as "uncertain" rather than error
@@ -208,6 +208,7 @@ class GoogleSearchClient:
         self.cse_id = cse_id
         self.fetch_full_content = fetch_full_content
         self.session = self._create_session()
+        self.cache = {}
         print("✓ Google Search Client initialized (REST API)")
     
     def _create_session(self) -> requests.Session:
@@ -216,7 +217,8 @@ class GoogleSearchClient:
         retry = Retry(
             total=3,
             backoff_factor=0.5,
-            status_forcelist=[500, 502, 503, 504]
+            status_forcelist=[500, 502, 503, 504, 429],
+            respect_retry_after_header=True 
         )
         adapter = HTTPAdapter(max_retries=retry)
         session.mount('http://', adapter)
@@ -238,6 +240,11 @@ class GoogleSearchClient:
         if not clean_query:
             return []
         
+        cache_key = f"{query}_{num_results}"
+        if cache_key in self.cache:
+            print(f"Cache hit for: '{query}'")
+            return self.cache[cache_key]
+            
         print(f"Searching for: '{clean_query}'")
         
         try:
@@ -257,9 +264,13 @@ class GoogleSearchClient:
             items = data.get('items', [])
             
             print(f"✓ API call successful, processing {len(items)} items")
+            results = self._process_results_safe(items)
+
+            if results:
+                self.cache[cache_key] = results
             
             # Process results safely
-            return self._process_results_safe(items)
+            return results
             
         except requests.exceptions.RequestException as e:
             print(f"Search API error: {e}")
@@ -579,7 +590,11 @@ class HallucinationEnvironment(EnvironmentInterface):
         reward = 0.0
         
         # Return observation that becomes the next user message
-        obs = {"role": "user", "content": error_detection_prompt}
+        obs = {
+            "role": "user",
+            "content": "<|im_start|>user\n" + error_detection_prompt + "<|im_end|>\n<|im_start|>assistant\n"
+        }
+        
         answer = None
         
         return reward, obs, updated_metadata, answer
