@@ -128,13 +128,13 @@ The training uses:
 #### Existing Model Checkpoints on Hugging Face
 
 Pre-trained BR-RM models will be available on Hugging Face (coming soon):
-- `nvidia/BR-RM-Qwen3-8B` 
-- `nvidia/BR-RM-Qwen3-14B`
+- [`nvidia/Qwen3-Nemotron-14B-BRRM`](https://huggingface.co/nvidia/Qwen3-Nemotron-14B-BRRM)
+- [`nvidia/Qwen3-Nemotron-8B-BRRM`](https://huggingface.co/nvidia/Qwen3-Nemotron-8B-BRRM)
 
 To use pre-trained checkpoints:
 ```bash
 uv run python examples/run_eval_brrm.py \
-    ++generation.model_name="nvidia/BR-RM-Qwen3-14B" \
+    ++generation.model_name="nvidia/Qwen3-Nemotron-8B-BRRM" \
     --dataset rewardbench
 ```
 
